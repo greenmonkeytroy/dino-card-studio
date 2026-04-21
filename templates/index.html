@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dino Battle Card Studio</title>
+<style>
+  :root {
+    --bg: #0e0a06;
+    --surface: #1a1208;
+    --surface2: #251a0c;
+    --border: #3d2a0f;
+    --accent: #c87820;
+    --accent2: #e8a840;
+    --text: #f0ddb8;
+    --text-muted: #8a7050;
+    --danger: #c83020;
+    --success: #40a060;
+
+    --bone-border: #b49656; --bone-bg: #f5f0da; --bone-pill: #654e0e;
+    --stone-border: #505050; --stone-bg: #262626; --stone-pill: #191919;
+    --jungle-border: #1e5c1e; --jungle-bg: #0a230a; --jungle-pill: #081c08;
+    --volcanic-border: #781e00; --volcanic-bg: #160300; --volcanic-pill: #460c00;
+    --ice-border: #1e4a70; --ice-bg: #051225; --ice-pill: #051225;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Georgia', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  header h1 {
+    font-family: Impact, 'Arial Black', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--accent2);
+    text-shadow: 0 0 20px rgba(200,120,32,0.4);
+  }
+  header .dino { font-size: 32px; }
+
+  .main {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 0;
+    flex: 1;
+  }
+
+  /* ---- FORM PANEL ---- */
+  .form-panel {
+    background: var(--surface);
+    border-right: 2px solid var(--border);
+    padding: 28px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .section-label {
+    font-family: Impact, sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  label {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+
+  input[type="text"], textarea, select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-family: Georgia, serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  input[type="text"]:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  select option { background: var(--surface2); }
+
+  /* Border style picker */
+  .style-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .style-btn {
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 4px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 11px;
+    font-family: Impact, sans-serif;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    background: var(--surface2);
+    color: var(--text-muted);
+  }
+  .style-btn:hover { border-color: var(--accent); color: var(--text); }
+  .style-btn.active { border-color: var(--accent2); color: var(--accent2); }
+  .style-btn .swatch {
+    display: block;
+    width: 100%;
+    height: 20px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+  }
+  .swatch-bone    { background: linear-gradient(135deg, #b49656 40%, #f5f0da); }
+  .swatch-stone   { background: linear-gradient(135deg, #505050 40%, #262626); }
+  .swatch-jungle  { background: linear-gradient(135deg, #1e5c1e 40%, #0a230a); }
+  .swatch-volcanic{ background: linear-gradient(135deg, #781e00 40%, #160300); }
+  .swatch-ice     { background: linear-gradient(135deg, #1e4a70 40%, #051225); }
+
+  /* Action picker */
+  .action-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+  .action-btn {
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 4px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 11px;
+    font-family: Impact, sans-serif;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    background: var(--surface2);
+    color: var(--text-muted);
+  }
+  .action-btn:hover { border-color: var(--accent); }
+  .action-btn.active { color: #fff; }
+  .action-btn[data-action="attack"].active  { background:#a01919; border-color:#a01919; }
+  .action-btn[data-action="defend"].active  { background:#1946a0; border-color:#1946a0; }
+  .action-btn[data-action="flee"].active    { background:#197840; border-color:#197840; }
+  .action-btn[data-action="dodge"].active   { background:#824b0f; border-color:#824b0f; }
+  .action-btn[data-action="roar"].active    { background:#6e1978; border-color:#6e1978; }
+  .action-btn[data-action="stomp"].active   { background:#55370f; border-color:#55370f; }
+  .action-btn[data-action="charge"].active  { background:#a05a00; border-color:#a05a00; }
+  .action-btn[data-action="bite"].active    { background:#820032; border-color:#820032; }
+  .action-btn[data-action="crush"].active   { background:#37230f; border-color:#453b30; }
+  .action-btn[data-action="ambush"].active  { background:#0f3714; border-color:#0f3714; }
+
+  /* Source toggle */
+  .source-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .source-btn {
+    flex: 1;
+    padding: 9px;
+    text-align: center;
+    font-size: 13px;
+    cursor: pointer;
+    background: var(--surface2);
+    color: var(--text-muted);
+    border: none;
+    transition: all 0.15s;
+  }
+  .source-btn.active { background: var(--accent); color: #fff; }
+
+  .prompt-field, .upload-field { display: flex; flex-direction: column; gap: 6px; }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); color: var(--text); }
+  .upload-zone .icon { font-size: 28px; display: block; margin-bottom: 6px; }
+  #fileInput { display: none; }
+  #uploadPreview { max-width: 100%; border-radius: 6px; margin-top: 8px; display: none; }
+
+  .generate-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: Impact, sans-serif;
+    font-size: 18px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 4px;
+  }
+  .generate-btn:hover:not(:disabled) { background: var(--accent2); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ---- PREVIEW PANEL ---- */
+  .preview-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 40px 24px;
+    gap: 24px;
+    background: var(--bg);
+    overflow-y: auto;
+  }
+
+  .preview-title {
+    font-family: Impact, sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  /* CSS Card Preview */
+  .card-wrap {
+    width: 300px;
+    height: 420px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    flex-shrink: 0;
+  }
+
+  .card-preview {
+    width: 300px;
+    height: 420px;
+    position: relative;
+    font-family: Impact, sans-serif;
+    transition: all 0.3s;
+  }
+  .card-bg {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding: 14px;
+    gap: 6px;
+  }
+
+  /* Border themes */
+  .theme-bone    .card-preview { background: #b49656; }
+  .theme-bone    .card-inner   { background: #f5f0da; }
+  .theme-bone    .pill         { background: #654e0e; color: #fff8dc; }
+  .theme-stone   .card-preview { background: #505050; }
+  .theme-stone   .card-inner   { background: #262626; }
+  .theme-stone   .pill         { background: #191919; color: #d8d8d8; }
+  .theme-jungle  .card-preview { background: #1e5c1e; }
+  .theme-jungle  .card-inner   { background: #0a230a; }
+  .theme-jungle  .pill         { background: #081c08; color: #a0f0a0; }
+  .theme-volcanic .card-preview { background: #781e00; }
+  .theme-volcanic .card-inner  { background: #160300; }
+  .theme-volcanic .pill        { background: #460c00; color: #ffc38c; }
+  .theme-ice     .card-preview { background: #1e4a70; }
+  .theme-ice     .card-inner   { background: #051225; }
+  .theme-ice     .pill         { background: #051225; color: #aae1ff; }
+
+  .card-inner {
+    flex: 1;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 5px;
+    overflow: hidden;
+  }
+
+  .pill {
+    border-radius: 8px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    text-align: center;
+  }
+
+  .card-title-pill {
+    height: 34px;
+    font-size: 16px;
+    letter-spacing: 1px;
+    font-family: Impact, sans-serif;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .card-image-area {
+    flex: 1;
+    border-radius: 5px;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    overflow: hidden;
+    position: relative;
+    min-height: 0;
+  }
+  .card-image-area img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+
+  .card-action-pill {
+    height: 28px;
+    font-size: 13px;
+    letter-spacing: 2px;
+    align-self: center;
+    width: 130px;
+    font-family: Impact, sans-serif;
+    color: #fff !important;
+  }
+  .action-attack  { background: #a01919 !important; }
+  .action-defend  { background: #1946a0 !important; }
+  .action-flee    { background: #197840 !important; }
+  .action-dodge   { background: #824b0f !important; }
+  .action-roar    { background: #6e1978 !important; }
+  .action-stomp   { background: #55370f !important; }
+  .action-charge  { background: #a05a00 !important; }
+  .action-bite    { background: #820032 !important; }
+  .action-crush   { background: #37230f !important; }
+  .action-ambush  { background: #0f3714 !important; }
+
+  .card-footer-pill {
+    min-height: 52px;
+    font-family: Georgia, serif;
+    font-size: 9px;
+    line-height: 1.4;
+    padding: 7px 10px;
+    display: block;
+    overflow: hidden;
+    align-items: flex-start;
+    text-align: center;
+  }
+
+  /* Progress & result */
+  .progress-box {
+    width: 300px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .progress-box.visible { display: flex; }
+
+  .progress-bar-track {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 0.5s;
+    width: 0%;
+  }
+  .progress-bar-fill.indeterminate {
+    width: 40%;
+    animation: slide 1.2s ease-in-out infinite;
+  }
+  @keyframes slide {
+    0%   { margin-left: -40%; }
+    100% { margin-left: 100%; }
+  }
+
+  .progress-msg {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .result-box {
+    width: 300px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .result-box.visible { display: flex; }
+
+  #resultCard {
+    width: 300px;
+    border-radius: 10px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+  }
+
+  .download-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--success);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: Impact, sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    text-decoration: none;
+    text-align: center;
+    display: block;
+  }
+  .download-btn:hover { opacity: 0.85; }
+
+  .make-another-btn {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: Impact, sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .make-another-btn:hover { border-color: var(--accent); color: var(--text); }
+
+  .error-box {
+    width: 300px;
+    background: rgba(200,48,32,0.15);
+    border: 1px solid var(--danger);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 13px;
+    color: #ff9080;
+    display: none;
+    text-align: center;
+  }
+  .error-box.visible { display: block; }
+
+  hr.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 4px 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="dino">🦖</span>
+  <h1>DINO BATTLE CARD STUDIO</h1>
+</header>
+
+<div class="main">
+
+  <!-- ===== FORM PANEL ===== -->
+  <div class="form-panel">
+
+    <div class="field">
+      <div class="section-label">Card Identity</div>
+      <label>Dinosaur Name</label>
+      <input type="text" id="title" placeholder="T-Rex Alpha" maxlength="30">
+    </div>
+
+    <div class="field">
+      <label>Border Style</label>
+      <div class="style-grid">
+        {% for style in border_styles %}
+        <div class="style-btn" data-style="{{ style }}" onclick="selectStyle('{{ style }}')">
+          <span class="swatch swatch-{{ style }}"></span>
+          {{ style.upper() }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Card Action</label>
+      <div class="action-grid">
+        {% for action in action_types %}
+        <div class="action-btn" data-action="{{ action }}" onclick="selectAction('{{ action }}')">
+          {{ action.upper() }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <hr class="divider">
+    <div class="section-label">Card Text</div>
+
+    <div class="field">
+      <label>Footer Description</label>
+      <textarea id="footer" placeholder="The undisputed ruler of the Cretaceous. One bite ends the battle." maxlength="220"></textarea>
+    </div>
+
+    <hr class="divider">
+    <div class="section-label">Artwork</div>
+
+    <div class="source-toggle">
+      <button class="source-btn active" id="btnGenerate" onclick="setSource('generate')">✨ Generate with AI</button>
+      <button class="source-btn" id="btnUpload" onclick="setSource('upload')">📁 Upload Image</button>
+    </div>
+
+    <div class="prompt-field" id="promptField">
+      <label>Extra Prompt Detail (optional)</label>
+      <input type="text" id="prompt" placeholder="roaring, volcanic eruption background, dramatic lighting">
+    </div>
+
+    <div class="upload-field" id="uploadField" style="display:none">
+      <label>Upload Artwork</label>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDrop(event)">
+        <span class="icon">🖼️</span>
+        Click or drag an image here
+      </div>
+      <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+      <img id="uploadPreview" alt="Preview">
+    </div>
+
+    <button class="generate-btn" id="generateBtn" onclick="startGeneration()">
+      ⚔ CREATE CARD
+    </button>
+
+  </div>
+
+  <!-- ===== PREVIEW PANEL ===== -->
+  <div class="preview-panel">
+
+    <div class="preview-title">Live Preview</div>
+
+    <!-- CSS Live Preview -->
+    <div class="card-wrap" id="previewWrap">
+      <div id="cardTheme" class="theme-volcanic">
+        <div class="card-preview">
+          <div class="card-bg">
+            <div class="card-inner">
+              <div class="pill card-title-pill" id="prevTitle">DINOSAUR NAME</div>
+              <div class="card-image-area" id="prevImageArea">🦕</div>
+              <div class="pill card-action-pill action-attack" id="prevAction">ATTACK</div>
+              <div class="pill card-footer-pill" id="prevFooter">Card description will appear here.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-box" id="progressBox">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill indeterminate" id="progressFill"></div>
+      </div>
+      <div class="progress-msg" id="progressMsg">Starting…</div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-box" id="resultBox">
+      <img id="resultCard" src="" alt="Generated card">
+      <a id="downloadBtn" class="download-btn" download="dino_card.png">⬇ DOWNLOAD CARD</a>
+      <button class="make-another-btn" onclick="resetToForm()">← MAKE ANOTHER</button>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="errorBox"></div>
+
+  </div>
+</div>
+
+<script>
+  // State
+  let selectedStyle = 'volcanic';
+  let selectedAction = 'attack';
+  let artworkSource = 'generate';
+  let uploadedB64 = null;
+  let pollInterval = null;
+
+  // Init defaults
+  selectStyle('volcanic');
+  selectAction('attack');
+
+  // Live preview updates
+  document.getElementById('title').addEventListener('input', e => {
+    const v = e.target.value.trim().toUpperCase() || 'DINOSAUR NAME';
+    document.getElementById('prevTitle').textContent = v;
+  });
+  document.getElementById('footer').addEventListener('input', e => {
+    document.getElementById('prevFooter').textContent = e.target.value || 'Card description will appear here.';
+  });
+
+  function selectStyle(style) {
+    selectedStyle = style;
+    document.querySelectorAll('.style-btn').forEach(b => b.classList.toggle('active', b.dataset.style === style));
+    document.getElementById('cardTheme').className = `theme-${style}`;
+  }
+
+  function selectAction(action) {
+    selectedAction = action;
+    document.querySelectorAll('.action-btn').forEach(b => b.classList.toggle('active', b.dataset.action === action));
+    const pill = document.getElementById('prevAction');
+    pill.textContent = action.toUpperCase();
+    pill.className = `pill card-action-pill action-${action}`;
+  }
+
+  function setSource(source) {
+    artworkSource = source;
+    document.getElementById('btnGenerate').classList.toggle('active', source === 'generate');
+    document.getElementById('btnUpload').classList.toggle('active', source === 'upload');
+    document.getElementById('promptField').style.display = source === 'generate' ? 'flex' : 'none';
+    document.getElementById('uploadField').style.display = source === 'upload' ? 'flex' : 'none';
+  }
+
+  function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) loadFile(file);
+  }
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) loadFile(file);
+  }
+  function loadFile(file) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      uploadedB64 = ev.target.result;
+      const preview = document.getElementById('uploadPreview');
+      preview.src = uploadedB64;
+      preview.style.display = 'block';
+      // Show in card preview
+      const area = document.getElementById('prevImageArea');
+      area.innerHTML = `<img src="${uploadedB64}" alt="artwork">`;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Generation
+  async function startGeneration() {
+    const title = document.getElementById('title').value.trim();
+    const footer = document.getElementById('footer').value.trim();
+    if (!title) { alert('Please enter a dinosaur name.'); return; }
+    if (!footer) { alert('Please enter a footer description.'); return; }
+    if (artworkSource === 'upload' && !uploadedB64) { alert('Please upload an image.'); return; }
+
+    const payload = {
+      title, footer,
+      action: selectedAction,
+      border: selectedStyle,
+      source: artworkSource,
+      prompt: document.getElementById('prompt').value.trim(),
+      artwork_b64: artworkSource === 'upload' ? uploadedB64 : null,
+    };
+
+    setState('loading');
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Generation failed');
+      pollJob(data.job_id);
+    } catch (err) {
+      setState('error', err.message);
+    }
+  }
+
+  function pollJob(jobId) {
+    pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/status/${jobId}`);
+        const job = await res.json();
+        document.getElementById('progressMsg').textContent = job.progress || '…';
+        if (job.status === 'done') {
+          clearInterval(pollInterval);
+          showResult(job.card_b64);
+        } else if (job.status === 'error') {
+          clearInterval(pollInterval);
+          setState('error', job.progress || 'Unknown error');
+        }
+      } catch (err) {
+        clearInterval(pollInterval);
+        setState('error', 'Lost connection to server.');
+      }
+    }, 2500);
+  }
+
+  function showResult(b64) {
+    const dataUrl = `data:image/png;base64,${b64}`;
+    document.getElementById('resultCard').src = dataUrl;
+    document.getElementById('downloadBtn').href = dataUrl;
+    const title = document.getElementById('title').value.trim().toLowerCase().replace(/\s+/g,'_');
+    document.getElementById('downloadBtn').download = `${title}_card.png`;
+    setState('result');
+  }
+
+  function setState(state, msg = '') {
+    document.getElementById('generateBtn').disabled = state === 'loading';
+    document.getElementById('progressBox').classList.toggle('visible', state === 'loading');
+    document.getElementById('resultBox').classList.toggle('visible', state === 'result');
+    document.getElementById('errorBox').classList.toggle('visible', state === 'error');
+    if (state === 'error') {
+      document.getElementById('errorBox').textContent = '⚠ ' + msg;
+      document.getElementById('generateBtn').disabled = false;
+    }
+    if (state === 'loading') {
+      document.getElementById('progressMsg').textContent = 'Starting…';
+    }
+  }
+
+  function resetToForm() {
+    if (pollInterval) clearInterval(pollInterval);
+    setState('idle');
+    document.getElementById('resultBox').classList.remove('visible');
+    document.getElementById('errorBox').classList.remove('visible');
+  }
+</script>
+</body>
+</html>

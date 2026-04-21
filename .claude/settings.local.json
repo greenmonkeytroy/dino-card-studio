@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "runway": {
+      "command": "node",
+      "args": ["/path/to/runway-api-mcp-server/dist/index.js"],
+      "env": {
+        "RUNWAYML_API_SECRET": "key_5dfb8232009cddec7bcb047102770dcca5ad4e7cde4084e6c69ab3a7f49f5ce35396900458710757878f3fa9ce407bc4a71fd68abc4ef01dba8dc85df5f3827c"
+      }
+    }
+  }
+}
