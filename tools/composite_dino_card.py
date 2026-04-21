@@ -98,20 +98,35 @@ ACTION_ICONS = {
 }
 
 
-def load_font(path: str, size: int) -> ImageFont.FreeTypeFont:
-    try:
-        return ImageFont.truetype(path, size)
-    except Exception:
-        return ImageFont.load_default()
+def load_font(candidates: list, size: int) -> ImageFont.FreeTypeFont:
+    for path in candidates:
+        try:
+            return ImageFont.truetype(path, size)
+        except Exception:
+            continue
+    return ImageFont.load_default(size=size)
 
 
 def get_fonts():
-    font_dir = "C:/Windows/Fonts"
+    bold_candidates = [
+        "C:/Windows/Fonts/impact.ttf",
+        "/usr/share/fonts/truetype/msttcorefonts/Impact.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    ]
+    serif_candidates = [
+        "C:/Windows/Fonts/georgiab.ttf",
+        "C:/Windows/Fonts/arialbd.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf",
+    ]
     return {
-        "title":  load_font(f"{font_dir}/impact.ttf", 52),
-        "action": load_font(f"{font_dir}/impact.ttf", 30),
-        "footer": load_font(f"{font_dir}/georgiab.ttf", 22),
-        "label":  load_font(f"{font_dir}/arialbd.ttf", 18),
+        "title":  load_font(bold_candidates, 52),
+        "action": load_font(bold_candidates, 30),
+        "footer": load_font(serif_candidates, 22),
+        "label":  load_font(bold_candidates, 18),
     }
 
 
