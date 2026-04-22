@@ -209,19 +209,41 @@ def draw_card_border(img, draw, s):
     draw_border_corners(draw, s["corner"], s)
 
 
-def fit_image_to_area(artwork_path, target_w, target_h):
+def fit_image_to_area(artwork_path, target_w, target_h, scale=1.0, offset_x=0.0, offset_y=0.0):
+    """
+    scale: multiplier on top of cover-fit. 1.0 fills the area. >1 zooms in. <1 letterboxes.
+    offset_x/y: -1.0 to 1.0, pan within available overflow. 0 = center.
+    """
     art = Image.open(artwork_path).convert("RGBA")
     art_ratio = art.width / art.height
     target_ratio = target_w / target_h
     if art_ratio > target_ratio:
-        new_h = target_h
-        new_w = int(art_ratio * new_h)
+        base_h = target_h
+        base_w = int(art_ratio * base_h)
     else:
-        new_w = target_w
-        new_h = int(new_w / art_ratio)
+        base_w = target_w
+        base_h = int(base_w / art_ratio)
+
+    new_w = max(1, int(base_w * scale))
+    new_h = max(1, int(base_h * scale))
     art = art.resize((new_w, new_h), Image.LANCZOS)
+
+    # Center crop origin, then shift by offset within the available overflow
     left = (new_w - target_w) // 2
     top = (new_h - target_h) // 2
+    if new_w > target_w:
+        left += int(offset_x * (new_w - target_w) / 2)
+    if new_h > target_h:
+        top += int(offset_y * (new_h - target_h) / 2)
+    left = max(0, min(left, max(0, new_w - target_w)))
+    top = max(0, min(top, max(0, new_h - target_h)))
+
+    # When scale < 1 image is smaller than target — paste centred on black canvas
+    if new_w < target_w or new_h < target_h:
+        canvas = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 255))
+        canvas.paste(art, ((target_w - new_w) // 2, (target_h - new_h) // 2))
+        return canvas
+
     return art.crop((left, top, left + target_w, top + target_h))
 
 
@@ -281,7 +303,8 @@ def draw_image_frame(draw, s):
                             radius=6, outline=s["accent"], width=2)
 
 
-def composite_card(title, action, footer, border_style, artwork_path, output_path):
+def composite_card(title, action, footer, border_style, artwork_path, output_path,
+                   art_scale=1.0, art_offset_x=0.0, art_offset_y=0.0):
     s = STYLES.get(border_style)
     if not s:
         raise ValueError(f"Unknown border style '{border_style}'. Choose: {list(STYLES)}")
@@ -297,7 +320,7 @@ def composite_card(title, action, footer, border_style, artwork_path, output_pat
     # Artwork
     art_w = IW
     art_h = IMAGE_Y2 - IMAGE_Y1
-    art = fit_image_to_area(artwork_path, art_w, art_h)
+    art = fit_image_to_area(artwork_path, art_w, art_h, art_scale, art_offset_x, art_offset_y)
     art_rgb = art.convert("RGB")
     img.paste(art_rgb, (IX, IMAGE_Y1))
 

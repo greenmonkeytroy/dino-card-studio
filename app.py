@@ -130,7 +130,11 @@ def run_job(job_id: str, payload: dict):
         card_tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
         card_path = card_tmp.name
         card_tmp.close()
-        composite_card(title, action, footer, border, artwork_path, card_path)
+        art_scale = float(payload.get("art_scale", 1.0))
+        art_x = float(payload.get("art_x", 0.0))
+        art_y = float(payload.get("art_y", 0.0))
+        composite_card(title, action, footer, border, artwork_path, card_path,
+                       art_scale=art_scale, art_offset_x=art_x, art_offset_y=art_y)
 
         with open(card_path, "rb") as f:
             card_b64 = base64.b64encode(f.read()).decode()

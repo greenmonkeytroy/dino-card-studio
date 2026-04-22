@@ -208,6 +208,74 @@
   #fileInput { display: none; }
   #uploadPreview { max-width: 100%; border-radius: 6px; margin-top: 8px; display: none; }
 
+  /* Art transform controls */
+  .art-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .art-controls-title {
+    font-family: Impact, sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .art-control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .art-control-row label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+  .art-control-row label span {
+    color: var(--accent2);
+    font-family: Impact, sans-serif;
+    letter-spacing: 1px;
+  }
+  .art-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+  .art-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+  .art-slider::-webkit-slider-thumb:hover { background: var(--accent2); }
+  .reset-art-btn {
+    align-self: flex-end;
+    padding: 5px 12px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-family: Impact, sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .reset-art-btn:hover { border-color: var(--accent); color: var(--text); }
+
   .generate-btn {
     width: 100%;
     padding: 14px;
@@ -546,6 +614,22 @@
       </div>
       <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
       <img id="uploadPreview" alt="Preview">
+      <div class="art-controls" id="artControls" style="display:none">
+        <div class="art-controls-title">Position &amp; Scale</div>
+        <div class="art-control-row">
+          <label>Scale <span id="scaleLabel">1.00×</span></label>
+          <input type="range" class="art-slider" id="artScale" min="0.5" max="3" step="0.05" value="1" oninput="updateArtTransform()">
+        </div>
+        <div class="art-control-row">
+          <label>Horizontal <span id="artXLabel">0</span></label>
+          <input type="range" class="art-slider" id="artX" min="-100" max="100" step="1" value="0" oninput="updateArtTransform()">
+        </div>
+        <div class="art-control-row">
+          <label>Vertical <span id="artYLabel">0</span></label>
+          <input type="range" class="art-slider" id="artY" min="-100" max="100" step="1" value="0" oninput="updateArtTransform()">
+        </div>
+        <button class="reset-art-btn" onclick="resetArtTransform()">RESET</button>
+      </div>
     </div>
 
     <button class="generate-btn" id="generateBtn" onclick="startGeneration()">
@@ -637,6 +721,9 @@
     document.getElementById('btnUpload').classList.toggle('active', source === 'upload');
     document.getElementById('promptField').style.display = source === 'generate' ? 'flex' : 'none';
     document.getElementById('uploadField').style.display = source === 'upload' ? 'flex' : 'none';
+    if (source === 'generate') {
+      document.getElementById('artControls').style.display = 'none';
+    }
   }
 
   function handleFileSelect(e) {
@@ -659,8 +746,38 @@
       // Show in card preview
       const area = document.getElementById('prevImageArea');
       area.innerHTML = `<img src="${uploadedB64}" alt="artwork">`;
+      // Show transform controls and reset to defaults
+      resetArtTransform();
+      document.getElementById('artControls').style.display = 'flex';
     };
     reader.readAsDataURL(file);
+  }
+
+  function updateArtTransform() {
+    const scale = parseFloat(document.getElementById('artScale').value);
+    const ox = parseInt(document.getElementById('artX').value) / 100; // -1 to 1
+    const oy = parseInt(document.getElementById('artY').value) / 100;
+
+    document.getElementById('scaleLabel').textContent = scale.toFixed(2) + '×';
+    document.getElementById('artXLabel').textContent = document.getElementById('artX').value;
+    document.getElementById('artYLabel').textContent = document.getElementById('artY').value;
+
+    const img = document.querySelector('#prevImageArea img');
+    if (!img) return;
+    // translate is pre-scale in CSS transform, so divide visual offset by scale
+    const tx = scale > 1 ? (ox * (scale - 1) * 50 / scale) : 0;
+    const ty = scale > 1 ? (oy * (scale - 1) * 50 / scale) : 0;
+    img.style.transformOrigin = 'center center';
+    img.style.transform = `scale(${scale}) translate(${tx}%, ${ty}%)`;
+  }
+
+  function resetArtTransform() {
+    document.getElementById('artScale').value = 1;
+    document.getElementById('artX').value = 0;
+    document.getElementById('artY').value = 0;
+    updateArtTransform();
+    const img = document.querySelector('#prevImageArea img');
+    if (img) img.style.transform = '';
   }
 
   // Generation
@@ -678,6 +795,9 @@
       source: artworkSource,
       prompt: document.getElementById('prompt').value.trim(),
       artwork_b64: artworkSource === 'upload' ? uploadedB64 : null,
+      art_scale: parseFloat(document.getElementById('artScale').value),
+      art_x: parseInt(document.getElementById('artX').value) / 100,
+      art_y: parseInt(document.getElementById('artY').value) / 100,
     };
 
     setState('loading');
@@ -744,6 +864,11 @@
     setState('idle');
     document.getElementById('resultBox').classList.remove('visible');
     document.getElementById('errorBox').classList.remove('visible');
+    document.getElementById('artControls').style.display = 'none';
+    resetArtTransform();
+    uploadedB64 = null;
+    document.getElementById('uploadPreview').style.display = 'none';
+    document.getElementById('uploadPreview').src = '';
   }
 </script>
 </body>
