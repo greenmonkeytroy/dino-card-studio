@@ -15,7 +15,7 @@ IX = BORDER + PAD          # inner x start = 47
 IW = W - 2 * IX            # inner width  = 656
 
 TITLE_Y1, TITLE_Y2 = 48, 126
-IMAGE_Y1, IMAGE_Y2 = 142, 657
+IMAGE_Y1, IMAGE_Y2 = 142, 748   # extends behind the action pill
 ACTION_W = 310
 ACTION_Y1, ACTION_Y2 = 672, 737
 ACTION_X1 = (W - ACTION_W) // 2
